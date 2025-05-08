@@ -36,7 +36,7 @@ CONFIG_SCHEMA = (
             ),
             cv.Required(CONF_WIND_DIRECTION): sensor.sensor_schema(
                 unit_of_measurement=UNIT_DEGREES,
-                icon=ICON_COMPASS_OUTLINE,
+#                icon=ICON_COMPASS_OUTLINE,
                 accuracy_decimals=1,
                 device_class=DEVICE_CLASS_EMPTY,
             ),
