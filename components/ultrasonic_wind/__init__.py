@@ -42,7 +42,7 @@ CONFIG_SCHEMA = (
             ),
             cv.Optional(CONF_BURST_PIN, default=33): cv.gpio_output_pin_schema,
             cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): cv.gpio_input_pin_schema,
-            cv.Optional(CONF_BME280_ID): cv.use_id(sensor.Sensor),  # generic sensor interface
+            cv.Optional(CONF_BME280_ID): cv.use_id(cg.Component),
             cv.Optional(CONF_SENSOR_DISTANCE, default=200.0): cv.float_range(min=10.0, max=1000.0),
         }
     )
