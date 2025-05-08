@@ -1,7 +1,7 @@
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import sensor, spi, gpio, bme280
+from esphome.components import sensor, spi, gpio
 from esphome.const import (
     CONF_ID,
     CONF_UPDATE_INTERVAL,
@@ -42,7 +42,7 @@ CONFIG_SCHEMA = (
             ),
             cv.Optional(CONF_BURST_PIN, default=33): cv.gpio_output_pin_schema,
             cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): cv.gpio_input_pin_schema,
-            cv.Optional(CONF_BME280_ID): cv.use_id(bme280.BME280Component),
+            cv.Optional(CONF_BME280_ID): cv.use_id(sensor.Sensor),  # generic sensor interface
             cv.Optional(CONF_SENSOR_DISTANCE, default=200.0): cv.float_range(min=10.0, max=1000.0),
         }
     )
