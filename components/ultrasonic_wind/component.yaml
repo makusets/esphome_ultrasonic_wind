@@ -6,3 +6,5 @@ files:
   - component.yaml
 platforms: ["esp32"]
 dependencies: ["sensor", "spi", "gpio"]
+sensor:
+  - platform: ultrasonic_wind
