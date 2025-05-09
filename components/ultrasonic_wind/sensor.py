@@ -14,6 +14,8 @@ from esphome.const import (
 )
 
 CODEOWNERS = ["@makusets"]
+AUTO_LOAD = ["sensor"]
+
 
 
 CONF_WIND_SPEED = "wind_speed"
