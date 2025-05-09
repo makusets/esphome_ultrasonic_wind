@@ -14,8 +14,8 @@ from esphome.const import (
 )
 
 CODEOWNERS = ["@makusets"]
-AUTO_LOAD = ["sensor"]
-DEPENDENCIES = ["sensor", "spi", "gpio"]
+
+print("Registering ultrasonic_wind platform...")
 
 
 
