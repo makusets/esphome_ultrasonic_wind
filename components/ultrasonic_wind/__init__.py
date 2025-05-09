@@ -25,6 +25,8 @@ UltrasonicWindSensor = ultrasonic_wind_ns.class_(
     "UltrasonicWindSensor", cg.PollingComponent, spi.SPIDevice
 )
 
+
+
 CONFIG_SCHEMA = (
     cv.Schema(
         {
@@ -73,3 +75,5 @@ async def to_code(config):
     if CONF_BME280_ID in config:
         bme = await cg.get_variable(config[CONF_BME280_ID])
         cg.add(var.set_bme280_sensor(bme))
+
+sensor.register_sensor("ultrasonic_wind", UltrasonicWindSensor)
