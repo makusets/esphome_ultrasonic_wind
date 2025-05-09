@@ -46,16 +46,34 @@ external_components:
   - source:
       type: git
       url: https://github.com/makusets/esphome_ultrasonic_wind
-    components: [ultrasonic_wind]
     refresh: 0s  # Optional: force update every time
 
-sensor:
+bme280:
+  - id: internal_bme
+    address: 0x76
+
+
+  # Ultrasonic wind sensor using TUSS4470
   - platform: ultrasonic_wind
-    burst_pin: GPIO33  # Connects to TUSS4470 IO2, optional, default GPIO33
+    burst_pin: GPIO33               # GPIO output for 40 kHz burst
+    tof_interrupt_pin: GPIO14       # GPIO input connected to OUT4
+    bme280_id: internal_bme         # Optional: use BME280 for speed of sound
+    sensor_distance: 200.0          # mm between emitter and receiver
     wind_speed:
       name: "Ultrasonic Wind Speed"
+      unit_of_measurement: "km/h"
     wind_direction:
       name: "Ultrasonic Wind Direction"
+      unit_of_measurement: "°"
+    update_interval: 5s
+
+  - platform: bme280
+    temperature:
+      name: "BME280 Temperature"
+    pressure:
+      name: "BME280 Pressure"
+    humidity:
+      name: "BME280 Humidity"
     update_interval: 5s
 
 
