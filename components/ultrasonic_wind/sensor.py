@@ -22,7 +22,7 @@ CONF_SENSOR_DISTANCE = "sensor_distance"
 
 ultrasonic_wind_ns = cg.esphome_ns.namespace("ultrasonic_wind")
 UltrasonicWindSensor = ultrasonic_wind_ns.class_(
-    "UltrasonicWindSensor", cg.PollingComponent, spi.SPIDevice
+    "UltrasonicWindSensor", sensor.Sensor, cg.PollingComponent, spi.SPIDevice
 )
 
 
