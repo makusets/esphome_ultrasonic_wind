@@ -1,6 +1,7 @@
 name: "Ultrasonic Wind Sensor"
 files:
   - __init__.py
+  - sensor.py
   - ultrasonic_wind.cpp
   - ultrasonic_wind.h
   - component.yaml
