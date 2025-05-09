@@ -2,22 +2,12 @@ print("Registering ultrasonic_wind platform...")
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sensor, spi, gpio
-from esphome.core.gpio import output_pin_schema, input_pin_schema
 from esphome.const import (
-    CONF_ID,
-    CONF_UPDATE_INTERVAL,
-    UNIT_KILOMETER_PER_HOUR,
-    UNIT_DEGREES,
-    ICON_WEATHER_WINDY,
-#    ICON_COMPASS_OUTLINE,
-    DEVICE_CLASS_EMPTY,
+    CONF_ID, CONF_UPDATE_INTERVAL,
+    UNIT_KILOMETER_PER_HOUR, UNIT_DEGREES,
+    ICON_WEATHER_WINDY, DEVICE_CLASS_EMPTY
 )
-
-CODEOWNERS = ["@makusets"]
-
-
-
-
+from esphome.core.gpio import output_pin_schema, input_pin_schema
 
 CONF_WIND_SPEED = "wind_speed"
 CONF_WIND_DIRECTION = "wind_direction"
@@ -31,29 +21,26 @@ UltrasonicWindSensor = ultrasonic_wind_ns.class_(
     "UltrasonicWindSensor", cg.PollingComponent, spi.SPIDevice
 )
 
-
 CONFIG_SCHEMA = (
-    cv.Schema(
-        {
-            cv.GenerateID(): cv.declare_id(UltrasonicWindSensor),
-            cv.Required(CONF_WIND_SPEED): sensor.sensor_schema(
-                unit_of_measurement=UNIT_KILOMETER_PER_HOUR,
-                icon="mdi:weather-windy",
-                accuracy_decimals=1,
-                device_class=DEVICE_CLASS_EMPTY,
-            ),
-            cv.Required(CONF_WIND_DIRECTION): sensor.sensor_schema(
-                unit_of_measurement=UNIT_DEGREES,
-                icon="mdi:compass",
-                accuracy_decimals=1,
-                device_class=DEVICE_CLASS_EMPTY,
-            ),
-            cv.Optional(CONF_BURST_PIN, default=33): output_pin_schema,
-            cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): input_pin_schema,
-            cv.Optional(CONF_BME280_ID): cv.use_id(cg.Component),
-            cv.Optional(CONF_SENSOR_DISTANCE, default=200.0): cv.float_range(min=10.0, max=1000.0),
-        }
-    )
+    sensor.sensor_platform_schema(UltrasonicWindSensor)
+    .extend({
+        cv.Required(CONF_WIND_SPEED): sensor.sensor_schema(
+            unit_of_measurement=UNIT_KILOMETER_PER_HOUR,
+            icon="mdi:weather-windy",
+            accuracy_decimals=1,
+            device_class=DEVICE_CLASS_EMPTY,
+        ),
+        cv.Required(CONF_WIND_DIRECTION): sensor.sensor_schema(
+            unit_of_measurement=UNIT_DEGREES,
+            icon="mdi:compass",
+            accuracy_decimals=1,
+            device_class=DEVICE_CLASS_EMPTY,
+        ),
+        cv.Optional(CONF_BURST_PIN, default=33): output_pin_schema,
+        cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): input_pin_schema,
+        cv.Optional(CONF_BME280_ID): cv.use_id(cg.Component),
+        cv.Optional(CONF_SENSOR_DISTANCE, default=200.0): cv.float_range(min=10.0, max=1000.0),
+    })
     .extend(cv.polling_component_schema("5s"))
     .extend(spi.spi_device_schema())
 )
@@ -80,5 +67,3 @@ async def to_code(config):
     if CONF_BME280_ID in config:
         bme = await cg.get_variable(config[CONF_BME280_ID])
         cg.add(var.set_bme280_sensor(bme))
-
-sensor.register_sensor("ultrasonic_wind", UltrasonicWindSensor)
