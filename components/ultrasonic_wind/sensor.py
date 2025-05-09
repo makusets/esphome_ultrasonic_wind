@@ -2,7 +2,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sensor, spi, gpio
-from esphome.core.gpio import output_pin_schema, input_pin_schema
+from esphome.core.gpio import outpu_pin_schema, input_pin_schema
 from esphome.const import (
     CONF_ID,
     CONF_UPDATE_INTERVAL,
@@ -20,7 +20,7 @@ CONF_TOF_INTERRUPT_PIN = "tof_interrupt_pin"
 CONF_BME280_ID = "bme280_id"
 CONF_SENSOR_DISTANCE = "sensor_distance"
 
-ultrasonic_wind_ns = cg.esphome_ns.namespace("utrasonic_wind")
+ultrasonic_wind_ns = cg.esphome_ns.namespace("ultrasonic_wind")
 UltrasonicWindSensor = ultrasonic_wind_ns.class_(
     "UltrasonicWindSensor", cg.PollingComponent, spi.SPIDevice
 )
