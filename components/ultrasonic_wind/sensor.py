@@ -20,7 +20,7 @@ CONF_TOF_INTERRUPT_PIN = "tof_interrupt_pin"
 CONF_BME280_ID = "bme280_id"
 CONF_SENSOR_DISTANCE = "sensor_distance"
 
-ultrasonic_wind_ns = cg.esphome_ns.namespace("ultrasonic_wind")
+ultrasonic_wind_ns = cg.esphome_ns.namespace("utrasonic_wind")
 UltrasonicWindSensor = ultrasonic_wind_ns.class_(
     "UltrasonicWindSensor", cg.PollingComponent, spi.SPIDevice
 )
