@@ -1,7 +1,7 @@
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import snsor, spi, gpio
+from esphome.components import sensor, spi, gpio
 from esphome.core.gpio import output_pin_schema, input_pin_schema
 from esphome.const import (
     CONF_ID,
