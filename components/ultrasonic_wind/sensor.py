@@ -13,6 +13,9 @@ from esphome.const import (
     DEVICE_CLASS_EMPTY,
 )
 
+CODEOWNERS = ["@makusets"]
+
+
 CONF_WIND_SPEED = "wind_speed"
 CONF_WIND_DIRECTION = "wind_direction"
 CONF_BURST_PIN = "burst_pin"
@@ -22,7 +25,7 @@ CONF_SENSOR_DISTANCE = "sensor_distance"
 
 ultrasonic_wind_ns = cg.esphome_ns.namespace("ultrasonic_wind")
 UltrasonicWindSensor = ultrasonic_wind_ns.class_(
-    "UltrasonicWindSensor", sensor.Sensor, cg.PollingComponent, spi.SPIDevice
+    "UltrasonicWindSensor", cg.PollingComponent, spi.SPIDevice
 )
 
 
