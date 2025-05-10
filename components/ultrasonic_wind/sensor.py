@@ -1,4 +1,5 @@
 print("Registering ultrasonic_wind platform...")
+from esphome import pins
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sensor, spi, gpio
