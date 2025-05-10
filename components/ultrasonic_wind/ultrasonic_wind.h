@@ -2,9 +2,9 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/core/gpio.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/spi/spi.h"
-#include "esphome/components/gpio/gpio.h"
 #include "esphome/components/bme280/bme280.h"
 
 namespace esphome {
