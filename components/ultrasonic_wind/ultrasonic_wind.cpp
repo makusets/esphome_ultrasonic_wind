@@ -47,7 +47,7 @@ void UltrasonicWindSensor::update() {
 
   uint32_t tof_us = this->tof_capture_time_us_ - this->burst_start_time_us_;
 
-  float wind_speed = calculate_wind_speed_from_distance();
+  float wind_speed = calculate_wind_speed_from_tof();
   float wind_direction = 90.0f;
 
   if (this->wind_speed_sensor_ != nullptr)
@@ -63,14 +63,11 @@ float UltrasonicWindSensor::calculate_speed_of_sound() {
   return 331.3f + 0.606f * T + 0.0124f * RH;
 }
 
-float UltrasonicWindSensor::calculate_wind_speed_from_distance() {
-  float t = (this->tof_capture_time_us_ - this->burst_start_time_us_) / 1e6f;
-  float d = this->sensor_distance_mm_ / 1000.0f;
+float UltrasonicWindSensor::calculate_wind_speed_from_tof() {
+  float t = (tof_capture_time_us_ - burst_start_time_us_) / 1e6f;
+  float d = sensor_distance_mm_ / 1000.0f;
   float sos = calculate_speed_of_sound();
-
-  float v = (d / t) - sos;
-  v = clamp(v, -20.0f, 20.0f);
-  return v * 3.6f;
+  return clamp((d / t) - sos, -20.0f, 20.0f) * 3.6f;
 }
 
 void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {

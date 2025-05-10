@@ -41,7 +41,7 @@ class UltrasonicWindSensor : public PollingComponent,
 
   static void IRAM_ATTR gpio_interrupt_handler(UltrasonicWindSensor *arg);
 
-  float calculate_wind_speed_from_distance(float);
+  float calculate_wind_speed_from_tof();
   float calculate_speed_of_sound();
   void write_register(uint8_t reg, uint8_t value);
   uint8_t read_register(uint8_t reg);
