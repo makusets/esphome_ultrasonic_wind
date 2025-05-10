@@ -10,13 +10,11 @@ static const char *const TAG = "ultrasonic_wind";
 #define CMD_TRIGGER 0x01
 
 void UltrasonicWindSensor::setup() {
-  ESP_LOGI(TAG, "Setting up TUSS4470 ultrasonic wind sensor...");
-
+  ESP_LOGI(TAG, "Setting up ultrasonic wind sensor...");
   this->burst_pin_->setup();
-  this->burst_pin_->digital_write(true);  // Idle high
-
+  this->burst_pin_->digital_write(true);
   this->interrupt_pin_->setup();
-  this->interrupt_pin_->attach_interrupt(UltrasonicWindSensor::gpio_interrupt_handler, this, gpio::INTERRUPT_RISING);
+  this->interrupt_pin_->attach_interrupt(UltrasonicWindSensor::gpio_interrupt_handler, this, gpio::INTERRUPT_RISING_EDGE);
 }
 
 void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor *arg) {
@@ -49,11 +47,6 @@ void UltrasonicWindSensor::update() {
 
   uint32_t tof_us = this->tof_capture_time_us_ - this->burst_start_time_us_;
 
-  if (bme280_ != nullptr) {
-    ESP_LOGD(TAG, "BME280: T=%.2f°C H=%.2f%% P=%.2f hPa",
-             bme280_->read_temperature(), bme280_->read_humidity(), bme280_->read_pressure());
-  }
-
   float wind_speed = calculate_wind_speed_from_distance(0);
   float wind_direction = 90.0f;
 
@@ -65,8 +58,8 @@ void UltrasonicWindSensor::update() {
 }
 
 float UltrasonicWindSensor::calculate_speed_of_sound() {
-  float T = (bme280_ != nullptr) ? bme280_->read_temperature() : 20.0f;
-  float RH = (bme280_ != nullptr) ? bme280_->read_humidity() : 50.0f;
+  float T = (temp_sensor_ && temp_sensor_->has_state()) ? temp_sensor_->state : 20.0f;
+  float RH = (hum_sensor_ && hum_sensor_->has_state()) ? hum_sensor_->state : 50.0f;
   return 331.3f + 0.606f * T + 0.0124f * RH;
 }
 
@@ -76,10 +69,7 @@ float UltrasonicWindSensor::calculate_wind_speed_from_distance(float) {
   float sos = calculate_speed_of_sound();
 
   float v = (d / t) - sos;
-
-  if (v < -20.0f) v = -20.0f;
-  if (v > 20.0f) v = 20.0f;
-
+  v = std::clamp(v, -20.0f, 20.0f);
   return v * 3.6f;
 }
 

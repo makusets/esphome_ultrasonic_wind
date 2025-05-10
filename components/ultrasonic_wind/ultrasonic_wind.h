@@ -1,11 +1,9 @@
-
 #pragma once
 
 #include "esphome/core/component.h"
 #include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/spi/spi.h"
-#include "esphome/components/bme280_i2c/bme280_i2c.h"
 
 namespace esphome {
 namespace ultrasonic_wind {
@@ -21,17 +19,19 @@ class UltrasonicWindSensor : public PollingComponent,
 
   void set_wind_speed_sensor(sensor::Sensor *sensor) { wind_speed_sensor_ = sensor; }
   void set_wind_direction_sensor(sensor::Sensor *sensor) { wind_direction_sensor_ = sensor; }
-  void set_burst_pin(GPIOPin *pin) { burst_pin_ = pin; }
-  void set_interrupt_pin(GPIOPin *pin) { interrupt_pin_ = pin; }
-  void set_bme280_sensor(bme280_i2c::BME280I2CComponent *bme) { bme280_ = bme; }
+  void set_burst_pin(InternalGPIOPin *pin) { burst_pin_ = pin; }
+  void set_interrupt_pin(InternalGPIOPin *pin) { interrupt_pin_ = pin; }
+  void set_temp_sensor(sensor::Sensor *s) { temp_sensor_ = s; }
+  void set_hum_sensor(sensor::Sensor *s) { hum_sensor_ = s; }
   void set_sensor_distance_mm(float distance) { sensor_distance_mm_ = distance; }
 
  protected:
   sensor::Sensor *wind_speed_sensor_{nullptr};
   sensor::Sensor *wind_direction_sensor_{nullptr};
-  GPIOPin *burst_pin_{nullptr};
-  GPIOPin *interrupt_pin_{nullptr};
-  bme280_i2c::BME280I2CComponent *bme280_{nullptr};
+  InternalGPIOPin *burst_pin_{nullptr};
+  InternalGPIOPin *interrupt_pin_{nullptr};
+  sensor::Sensor *temp_sensor_{nullptr};
+  sensor::Sensor *hum_sensor_{nullptr};
 
   float sensor_distance_mm_{200.0f};
 
