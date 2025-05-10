@@ -22,7 +22,7 @@ UltrasonicWindSensor = ultrasonic_wind_ns.class_(
 )
 
 CONFIG_SCHEMA = (
-    sensor.sensor_platform_schema(UltrasonicWindSensor)
+    sensor.sensor_schema(UltrasonicWindSensor)
     .extend({
         cv.Required(CONF_WIND_SPEED): sensor.sensor_schema(
             unit_of_measurement=UNIT_KILOMETER_PER_HOUR,
@@ -67,5 +67,4 @@ async def to_code(config):
     if CONF_BME280_ID in config:
         bme = await cg.get_variable(config[CONF_BME280_ID])
         cg.add(var.set_bme280_sensor(bme))
-        
-sensor.register_sensor("ultrasonic_wind", UltrasonicWindSensor)
+
