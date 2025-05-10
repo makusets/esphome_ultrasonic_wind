@@ -69,7 +69,7 @@ float UltrasonicWindSensor::calculate_wind_speed_from_distance(float) {
   float sos = calculate_speed_of_sound();
 
   float v = (d / t) - sos;
-  v = std::clamp(v, -20.0f, 20.0f);
+  v = clamp(v, -20.0f, 20.0f);
   return v * 3.6f;
 }
 
