@@ -20,7 +20,7 @@ ultrasonic_wind_ns = cg.esphome_ns.namespace("ultrasonic_wind")
 UltrasonicWindSensor = ultrasonic_wind_ns.class_(
     "UltrasonicWindSensor", cg.PollingComponent, spi.SPIDevice
 )
-
+print("Registering ultrasonic_wind platform...")
 CONFIG_SCHEMA = (
     sensor.sensor_platform_schema(UltrasonicWindSensor)
     .extend({
@@ -44,7 +44,7 @@ CONFIG_SCHEMA = (
     .extend(cv.polling_component_schema("5s"))
     .extend(spi.spi_device_schema())
 )
-
+print("Registering ultrasonic_wind platform...")
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
