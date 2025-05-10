@@ -7,7 +7,7 @@ from esphome.const import (
     UNIT_KILOMETER_PER_HOUR, UNIT_DEGREES,
     ICON_WEATHER_WINDY, DEVICE_CLASS_EMPTY
 )
-from esphome.core.gpio import output_pin_schema, input_pin_schema
+#from esphome.core.gpio import output_pin_schema, input_pin_schema
 
 CONF_WIND_SPEED = "wind_speed"
 CONF_WIND_DIRECTION = "wind_direction"
