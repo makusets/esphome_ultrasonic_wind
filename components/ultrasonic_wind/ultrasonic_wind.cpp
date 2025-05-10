@@ -51,11 +51,18 @@ void UltrasonicWindSensor::update() {
   float wind_speed = calculate_wind_speed_from_tof();
   float wind_direction = 90.0f;
 
+  ESP_LOGI(TAG, "Wind speed: %.2f km/h, Wind direction: %.2f degrees", wind_speed, wind_direction);
+ 
+
+
   if (this->wind_speed_sensor_ != nullptr)
     this->wind_speed_sensor_->publish_state(wind_speed);
+  
 
   if (this->wind_direction_sensor_ != nullptr)
     this->wind_direction_sensor_->publish_state(wind_direction);
+
+  
 }
 
 float UltrasonicWindSensor::calculate_speed_of_sound() {
