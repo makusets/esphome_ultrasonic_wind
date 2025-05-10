@@ -7,7 +7,6 @@ from esphome.const import (
     UNIT_KILOMETER_PER_HOUR, UNIT_DEGREES,
     ICON_WEATHER_WINDY, DEVICE_CLASS_EMPTY
 )
-#from esphome.core.gpio import output_pin_schema, input_pin_schema
 
 CONF_WIND_SPEED = "wind_speed"
 CONF_WIND_DIRECTION = "wind_direction"
@@ -37,8 +36,8 @@ CONFIG_SCHEMA = (
                 accuracy_decimals=1,
                 device_class=DEVICE_CLASS_EMPTY,
             ),
-#            cv.Optional(CONF_BURST_PIN, default=33): output_pin_schema,
-#            cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): input_pin_schema,
+            cv.Optional(CONF_BURST_PIN, default=33): cv.output_pin,
+            cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): cv.input_pin,
             cv.Optional(CONF_BME280_ID): cv.use_id(cg.Component),
             cv.Optional(CONF_SENSOR_DISTANCE, default=200.0): cv.float_range(min=10.0, max=1000.0),
         }
