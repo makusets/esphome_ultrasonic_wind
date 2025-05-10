@@ -5,7 +5,7 @@
 #include "esphome/core/gpio.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/spi/spi.h"
-#include "esphome/components/bme280/bme280.h"
+#include "esphome/components/bme280_i2c/bme280_i2c.h"
 
 namespace esphome {
 namespace ultrasonic_wind {
