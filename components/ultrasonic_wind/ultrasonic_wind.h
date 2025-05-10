@@ -21,9 +21,9 @@ class UltrasonicWindSensor : public PollingComponent,
 
   void set_wind_speed_sensor(sensor::Sensor *sensor) { wind_speed_sensor_ = sensor; }
   void set_wind_direction_sensor(sensor::Sensor *sensor) { wind_direction_sensor_ = sensor; }
-  void set_burst_pin(GPIOPin *pin) { burst_pin_ = pin; }
-  void set_interrupt_pin(GPIOPin *pin) { interrupt_pin_ = pin; }
-  void set_bme280_sensor(bme280::BME280Component *bme) { bme280_ = bme; }
+  void set_burst_pin(esphome::gpio::GPIOPin *pin)
+  void set_interrupt_pin(esphome::gpio::GPIOPin *pin) { interrupt_pin_ = pin; }
+  void set_bme280_sensor(bme280_i2c::BME280I2CComponent *bme) { bme280_ = bme; }
   void set_sensor_distance_mm(float distance) { sensor_distance_mm_ = distance; }
 
  protected:
@@ -31,7 +31,7 @@ class UltrasonicWindSensor : public PollingComponent,
   sensor::Sensor *wind_direction_sensor_{nullptr};
   GPIOPin *burst_pin_{nullptr};
   GPIOPin *interrupt_pin_{nullptr};
-  bme280::BME280Component *bme280_{nullptr};
+  bme280_i2c::BME280I2CComponent *bme280_{nullptr};
 
   float sensor_distance_mm_{200.0f};  // Default to 200 mm
 
