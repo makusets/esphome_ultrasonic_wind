@@ -52,7 +52,6 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await spi.register_spi_device(var, config)
-    await sensor.register_sensor(var, config)
 
     wind_speed = await sensor.new_sensor(config[CONF_WIND_SPEED])
     cg.add(var.set_wind_speed_sensor(wind_speed))
