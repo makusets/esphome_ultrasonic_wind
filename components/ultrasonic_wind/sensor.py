@@ -22,25 +22,27 @@ UltrasonicWindSensor = ultrasonic_wind_ns.class_(
 )
 print("Registering ultrasonic_wind platform...")
 CONFIG_SCHEMA = (
-    sensor.sensor_platform_schema(UltrasonicWindSensor)
-    .extend({
-        cv.Required(CONF_WIND_SPEED): sensor.sensor_schema(
-            unit_of_measurement=UNIT_KILOMETER_PER_HOUR,
-            icon="mdi:weather-windy",
-            accuracy_decimals=1,
-            device_class=DEVICE_CLASS_EMPTY,
-        ),
-        cv.Required(CONF_WIND_DIRECTION): sensor.sensor_schema(
-            unit_of_measurement=UNIT_DEGREES,
-            icon="mdi:compass",
-            accuracy_decimals=1,
-            device_class=DEVICE_CLASS_EMPTY,
-        ),
-#        cv.Optional(CONF_BURST_PIN, default=33): output_pin_schema,
-#        cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): input_pin_schema,
-        cv.Optional(CONF_BME280_ID): cv.use_id(cg.Component),
-        cv.Optional(CONF_SENSOR_DISTANCE, default=200.0): cv.float_range(min=10.0, max=1000.0),
-    })
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(UltrasonicWindSensor),
+            cv.Required(CONF_WIND_SPEED): sensor.sensor_schema(
+                unit_of_measurement=UNIT_KILOMETER_PER_HOUR,
+                icon=ICON_WEATHER_WINDY,
+                accuracy_decimals=1,
+                device_class=DEVICE_CLASS_EMPTY,
+            ),
+            cv.Required(CONF_WIND_DIRECTION): sensor.sensor_schema(
+                unit_of_measurement=UNIT_DEGREES,
+                icon="mdi:compass",
+                accuracy_decimals=1,
+                device_class=DEVICE_CLASS_EMPTY,
+            ),
+#            cv.Optional(CONF_BURST_PIN, default=33): output_pin_schema,
+#            cv.Optional(CONF_TOF_INTERRUPT_PIN, default=14): input_pin_schema,
+            cv.Optional(CONF_BME280_ID): cv.use_id(cv.Component),
+            cv.Optional(CONF_SENSOR_DISTANCE, default=200.0): cv.float_range(min=10.0, max=1000.0),
+        }
+    )
     .extend(cv.polling_component_schema("5s"))
     .extend(spi.spi_device_schema())
 )
