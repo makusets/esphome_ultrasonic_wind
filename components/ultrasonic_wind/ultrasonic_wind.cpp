@@ -11,6 +11,7 @@ static const char *const TAG = "ultrasonic_wind";
 
 void UltrasonicWindSensor::setup() {
   ESP_LOGI(TAG, "Setting up ultrasonic wind sensor...");
+  this->spi_setup();
   this->burst_pin_->setup();
   this->burst_pin_->digital_write(true);
   this->interrupt_pin_->setup();
