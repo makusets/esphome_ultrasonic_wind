@@ -6,8 +6,8 @@ namespace ultrasonic_wind {
 
 static const char *const TAG = "ultrasonic_wind";
 
-#define REG_TOF_CONFIG 0x22
-#define CMD_TRIGGER 0x01
+#define REG_TOF_CONFIG 0x1B
+#define CMD_TRIGGER 0x03
 
 void UltrasonicWindSensor::setup() {
   ESP_LOGI(TAG, "Setting up ultrasonic wind sensor...");
@@ -52,6 +52,7 @@ void UltrasonicWindSensor::update() {
   float wind_direction = 90.0f;
 
   ESP_LOGI(TAG, "Wind speed: %.2f km/h, Wind direction: %.2f degrees", wind_speed, wind_direction);
+  ESP_LOGI(TAG, "Temperature: %.2f °C, Humidity: %.2f %%", temp_sensor_ ? temp_sensor_->state : 0.0f, hum_sensor_ ? hum_sensor_->state : 0.0f);
  
 
 
