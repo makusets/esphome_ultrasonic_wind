@@ -24,6 +24,9 @@ void UltrasonicWindSensor::setup() {
 
   // Enable echo interrupt (OUT4) output on TUSS4470 and set threshold level, done using SPI comms
   write_register(0x17, 0x11);  // 
+
+  // Enable regulator
+  write_register(0x16, 0x00);  // VDRV_HI_Z = 0, level = 0x00 → 5V
 }
 
 void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor *arg) {
@@ -37,6 +40,19 @@ void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor
  The component is a sensor, so it gets called depending on update_interval set in the YAML config
 ****************************************************************/
 void UltrasonicWindSensor::update() {
+  
+  // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
+  write_register(0x1B, 0x02);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
+  delay(1);  // Small delay to allow VDRV regulator to begin charging
+
+  // Check if VDRV is ready by reading DEV_STAT (0x1C), bit 3 = VDRV_READY
+  uint8_t dev_status = read_register(0x1C);
+  if (!(dev_status & (1 << 3))) {
+    ESP_LOGW(TAG, "VDRV not ready. Check VPWR or VDRV level.");
+    return;  // Skip triggering if not ready
+  }
+    
+  
   this->tof_available_ = false;
 
 
