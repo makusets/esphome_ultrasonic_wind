@@ -40,7 +40,7 @@ class UltrasonicWindSensor : public PollingComponent,
   volatile uint32_t tof_capture_time_us_{0};
 
   static void IRAM_ATTR gpio_interrupt_handler(UltrasonicWindSensor *arg);
-
+//
   float calculate_wind_speed_from_tof();
   float calculate_speed_of_sound();
   void write_register(uint8_t reg, uint8_t value);

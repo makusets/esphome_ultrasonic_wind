@@ -40,15 +40,13 @@ void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor
  The component is a sensor, so it gets called depending on update_interval set in the YAML config
 ****************************************************************/
 void UltrasonicWindSensor::update() {
-  log_registers(0x14);
-  log_registers(0x16);
-  log_registers(0x17);
-  
-  
+  log_register(0x14);
+  log_register(0x17);
+  log_register(0x16);
   // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
   write_register(0x1B, 0x02);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
   delay(1);  // Small delay to allow VDRV regulator to begin charging
-  log_registers(0x1B);  // Log the registers for debugging
+  log_register(0x1B);  // Log the registers for debugging
   // Check if VDRV is ready by reading DEV_STAT (0x1C), bit 3 = VDRV_READY
   uint8_t dev_status = read_register(0x1C);
   if (!(dev_status & (1 << 3))) {
@@ -63,7 +61,8 @@ void UltrasonicWindSensor::update() {
   // Get TUSS4470 ready for the ultrasonic burst by writing to the TOF_CONFIG register, uses SPI comms
   write_register(0x1B, 0x01);  // REG_TOF_CONFIG, CMD_TRIGGER_ON
   delayMicroseconds(10);  // allow start
-  log_registers(0x1B);
+  log_register(0x1B);
+  //
   //Start the timer
   this->burst_start_time_us_ = micros();
   // Trigger the burst by toggling the burst pin (IO2) 8 times, each time with a 13us low and 12us high pulse
