@@ -120,8 +120,8 @@ uint8_t calculate_odd_parity(uint16_t word) {
 
 // write register to TUSS4470 using SPI
 void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
-  // Build command byte: RW(1 bit) + Addr(6 bits) + Parity(1 bit)
-  uint8_t command = (0 << 7) | ((reg & 0x3F) << 1);  // Write = 0
+  // Build command: [RW=0][6-bit addr][parity bit]
+  uint8_t command = ((reg & 0x3F) << 1);  // RW = 0 (write)
   uint16_t frame = (command << 8) | value;
 
   // Set parity bit (bit 8)
@@ -129,27 +129,35 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
     frame |= (1 << 8);
   }
 
+  // Send 16 bits manually via two 8-bit SPI transfers
+  uint8_t msb = (frame >> 8) & 0xFF;
+  uint8_t lsb = frame & 0xFF;
+
   this->enable();
-  this->transfer16(frame);
+  this->transfer_byte(msb);
+  this->transfer_byte(lsb);
   this->disable();
 }
 
 // read register from TUSS4470 using SPI
 uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
-  // Build command byte: RW = 1
-  uint8_t command = (1 << 7) | ((reg & 0x3F) << 1);
+  // Build command: [RW=1][6-bit addr][parity bit]
+  uint8_t command = (1 << 7) | ((reg & 0x3F) << 1);  // RW = 1 (read)
   uint16_t frame = (command << 8);
 
-  // Set parity bit
   if (calculate_odd_parity(frame)) {
     frame |= (1 << 8);
   }
 
+  uint8_t msb = (frame >> 8) & 0xFF;
+  uint8_t lsb = frame & 0xFF;
+
   this->enable();
-  uint16_t result = this->transfer16(frame);
+  this->transfer_byte(msb);
+  uint8_t response = this->transfer_byte(lsb);  // LSB phase returns data
   this->disable();
 
-  return result & 0xFF;  // Only data byte matters
+  return response;
 }
 
 
