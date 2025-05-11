@@ -54,6 +54,8 @@ void UltrasonicWindSensor::update() {
   this->burst_start_time_us_ = micros();
   // Start the burst by toggling the burst pin (IO2) 8 times, each time with a 13us low and 12us high pulse
   // This generates a 40kHz signal on the burst pin (IO2) for the TUSS4470
+
+  ESP_LOGI(TAG, "Starting clock");
   for (int i = 0; i < 8; i++) {
     this->burst_pin_->digital_write(false);
     delayMicroseconds(13);
