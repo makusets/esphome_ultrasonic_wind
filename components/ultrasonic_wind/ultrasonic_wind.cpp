@@ -129,9 +129,9 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
     frame |= (1 << 8);
   }
 
-  this->spi_dev_->enable();
-  this->spi_dev_->transfer16(frame);
-  this->spi_dev_->disable();
+  this->enable();
+  this->transfer16(frame);
+  this->disable();
 }
 
 // read register from TUSS4470 using SPI
@@ -145,9 +145,9 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
     frame |= (1 << 8);
   }
 
-  this->spi_dev_->enable();
-  uint16_t result = this->spi_dev_->transfer16(frame);
-  this->spi_dev_->disable();
+  this->enable();
+  uint16_t result = this->transfer16(frame);
+  this->disable();
 
   return result & 0xFF;  // Only data byte matters
 }
