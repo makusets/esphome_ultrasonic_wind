@@ -44,11 +44,11 @@ void UltrasonicWindSensor::update() {
   // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
   write_register(0x1B, 0x02);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
   delay(1);  // Small delay to allow VDRV regulator to begin charging
-
+  log_registers(0x1B);  // Log the registers for debugging
   // Check if VDRV is ready by reading DEV_STAT (0x1C), bit 3 = VDRV_READY
   uint8_t dev_status = read_register(0x1C);
   if (!(dev_status & (1 << 3))) {
-    ESP_LOGW(TAG, "VDRV not ready. Check VPWR or VDRV level.");
+    ESP_LOGW(TAG, "VDRV not ready. Check VPWR or VDRV level, bit3: %d", dev_status & (1 << 3));
     return;  // Skip triggering if not ready
   }
     
@@ -59,6 +59,7 @@ void UltrasonicWindSensor::update() {
   // Get TUSS4470 ready for the ultrasonic burst by writing to the TOF_CONFIG register, uses SPI comms
   write_register(0x1B, 0x01);  // REG_TOF_CONFIG, CMD_TRIGGER_ON
   delayMicroseconds(10);  // allow start
+  log_registers(0x1B);
   //Start the timer
   this->burst_start_time_us_ = micros();
   // Trigger the burst by toggling the burst pin (IO2) 8 times, each time with a 13us low and 12us high pulse
@@ -174,6 +175,16 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
   this->disable();
 
   return response;
+}
+// log the registers of the TUSS4470 for debugging purposes
+void UltrasonicWindSensor::log_registers(uint8_t table_address) {
+  ESP_LOGD(TAG, "Reading TUSS4470 register table starting at 0x%02X...", table_address);
+
+  for (uint8_t i = 0; i < 8; i++) {
+    uint8_t addr = table_address + i;
+    uint8_t val = read_register(addr);
+    ESP_LOGD(TAG, "  Reg[0x%02X] = 0x%02X", addr, val);
+  }
 }
 
 
