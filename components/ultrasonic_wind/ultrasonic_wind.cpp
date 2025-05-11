@@ -40,6 +40,10 @@ void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor
  The component is a sensor, so it gets called depending on update_interval set in the YAML config
 ****************************************************************/
 void UltrasonicWindSensor::update() {
+  log_registers(0x14);
+  log_registers(0x16);
+  log_registers(0x17);
+  
   
   // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
   write_register(0x1B, 0x02);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
@@ -177,14 +181,9 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
   return response;
 }
 // log the registers of the TUSS4470 for debugging purposes
-void UltrasonicWindSensor::log_registers(uint8_t table_address) {
-  ESP_LOGD(TAG, "Reading TUSS4470 register table starting at 0x%02X...", table_address);
-
-  for (uint8_t i = 0; i < 8; i++) {
-    uint8_t addr = table_address + i;
-    uint8_t val = read_register(addr);
-    ESP_LOGD(TAG, "  Reg[0x%02X] = 0x%02X", addr, val);
-  }
+void UltrasonicWindSensor::log_register(uint8_t addr) {
+  uint8_t val = read_register(addr);
+  ESP_LOGD(TAG, "TUSS4470 Reg[0x%02X] = 0x%02X", addr, val);
 }
 
 
