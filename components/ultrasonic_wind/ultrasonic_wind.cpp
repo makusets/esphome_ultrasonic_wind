@@ -6,8 +6,7 @@ namespace ultrasonic_wind {
 
 static const char *const TAG = "ultrasonic_wind";
 
-#define REG_TOF_CONFIG 0x1B
-#define CMD_TRIGGER 0x03
+
 
 void UltrasonicWindSensor::setup() {
   ESP_LOGI(TAG, "Setting up ultrasonic wind sensor...");
@@ -21,17 +20,10 @@ void UltrasonicWindSensor::setup() {
   this->interrupt_pin_->attach_interrupt(UltrasonicWindSensor::gpio_interrupt_handler, this, gpio::INTERRUPT_RISING_EDGE);
 
   // Set IO_MODE = 0 on TUSS4470: external burst control via clock on IO2 (burst_pin), done using SPI comms
-  write_register(0x15, 0x00);  // REG_DEV_CTRL_3
+  write_register(0x14, 0x00);  // REG_DEV_CTRL_3
 
   // Enable echo interrupt (OUT4) output on TUSS4470 and set threshold level, done using SPI comms
-
-  // 1. Enable ECHO_INT_EN (bit 4 of REG_DEV_CTRL_2, assumed address 0x14)
-  uint8_t ctrl2 = read_register(0x14);
-  ctrl2 |= (1 << 4);  // Set ECHO_INT_EN
-  write_register(0x14, ctrl2);
-
-  // 2. Set threshold to mid-high value (~0.8 V if VDD = 3.3V)
-  write_register(0x17, 0x0A);  // ECHO_INT_THR_SEL = 0x0A
+  write_register(0x17, 0x11);  // 
 }
 
 void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor *arg) {
@@ -48,12 +40,13 @@ void UltrasonicWindSensor::update() {
   this->tof_available_ = false;
 
 
-  // Trigger the ultrasonic burst by writing to the TOF_CONFIG register, uses SPI comms
-  write_register(REG_TOF_CONFIG, CMD_TRIGGER);
+  // Get TUSS4470 ready for the ultrasonic burst by writing to the TOF_CONFIG register, uses SPI comms
+  write_register(0x1B, 0x01);  // REG_TOF_CONFIG, CMD_TRIGGER_ON
+  delayMicroseconds(10);  // allow start
   //Start the timer
   this->burst_start_time_us_ = micros();
-  // Start the burst by toggling the burst pin (IO2) 8 times, each time with a 13us low and 12us high pulse
-  // This generates a 40kHz signal on the burst pin (IO2) for the TUSS4470
+  // Trigger the burst by toggling the burst pin (IO2) 8 times, each time with a 13us low and 12us high pulse
+  // This generates a 40kHz signal on the burst pin (IO2) for the TUSS4470 and will start the ultrasonic burst in OUTA and OUTB
 
   ESP_LOGI(TAG, "Starting clock");
   for (int i = 0; i < 8; i++) {
@@ -62,6 +55,9 @@ void UltrasonicWindSensor::update() {
     this->burst_pin_->digital_write(true);
     delayMicroseconds(12);
   }
+  //Reset the TUSS4470 as per datasheet
+  write_register(0x1B, 0x00);  // REG_TOF_CONFIG, CMD_TRIGGER_OFF
+
   // Wait for the echo to be captured
   // The interrupt handler will set tof_available_ to true when the echo is received
   for (int i = 0; i < 50; i++) {
@@ -97,6 +93,8 @@ void UltrasonicWindSensor::update() {
   
 }
 
+
+
 float UltrasonicWindSensor::calculate_speed_of_sound() {
   float T = (temp_sensor_ && temp_sensor_->has_state()) ? temp_sensor_->state : 20.0f;
   float RH = (hum_sensor_ && hum_sensor_->has_state()) ? hum_sensor_->state : 50.0f;
@@ -110,20 +108,50 @@ float UltrasonicWindSensor::calculate_wind_speed_from_tof() {
   return clamp((d / t) - sos, -20.0f, 20.0f) * 3.6f;
 }
 
-void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
-  this->enable();
-  this->transfer_byte(reg & 0x7F);
-  this->transfer_byte(value);
-  this->disable();
+//calculate the odd parity bit for a 16-bit word before sending it to the TUSS4470 through SPI
+// The odd parity bit is set to 1 if the number of 1 bits in the word is even, and 0 if it is odd
+uint8_t calculate_odd_parity(uint16_t word) {
+  uint8_t count = 0;
+  for (uint8_t i = 0; i < 16; i++) {
+    count += (word >> i) & 0x1;
+  }
+  return count % 2 == 0 ? 1 : 0;  // Return 1 if even (to make it odd)
 }
 
-uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
-  this->enable();
-  this->transfer_byte(0x80 | reg);
-  uint8_t value = this->transfer_byte(0x00);
-  this->disable();
-  return value;
+// write register to TUSS4470 using SPI
+void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
+  // Build command byte: RW(1 bit) + Addr(6 bits) + Parity(1 bit)
+  uint8_t command = (0 << 7) | ((reg & 0x3F) << 1);  // Write = 0
+  uint16_t frame = (command << 8) | value;
+
+  // Set parity bit (bit 8)
+  if (calculate_odd_parity(frame)) {
+    frame |= (1 << 8);
+  }
+
+  this->spi_dev_->enable();
+  this->spi_dev_->transfer16(frame);
+  this->spi_dev_->disable();
 }
+
+// read register from TUSS4470 using SPI
+uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
+  // Build command byte: RW = 1
+  uint8_t command = (1 << 7) | ((reg & 0x3F) << 1);
+  uint16_t frame = (command << 8);
+
+  // Set parity bit
+  if (calculate_odd_parity(frame)) {
+    frame |= (1 << 8);
+  }
+
+  this->spi_dev_->enable();
+  uint16_t result = this->spi_dev_->transfer16(frame);
+  this->spi_dev_->disable();
+
+  return result & 0xFF;  // Only data byte matters
+}
+
 
 }  // namespace ultrasonic_wind
 }  // namespace esphome
