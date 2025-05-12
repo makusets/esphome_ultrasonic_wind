@@ -52,7 +52,7 @@ void UltrasonicWindSensor::update() {
   uint8_t dev_status = read_register(0x1C);
   if (!(dev_status & (1 << 3))) {
     ESP_LOGW(TAG, "VDRV not ready. Check VPWR or VDRV level, bit3: %d", dev_status & (1 << 3));
-    return;  // Skip triggering if not ready
+    //return;  // Skip triggering if not ready
   }
     
   
