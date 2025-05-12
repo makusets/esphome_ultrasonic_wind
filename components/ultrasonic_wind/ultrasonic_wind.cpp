@@ -154,9 +154,11 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
   uint8_t low  = frame & 0xFF;
 
   // Send command + value and receive 16-bit response
+  this->enable();  // Pull CS LOW
   uint8_t status_hi = this->transfer_byte(high);
   uint8_t status_lo = this->transfer_byte(low);
   uint16_t response = (status_hi << 8) | status_lo;
+  this->disable(); // Pull CS HIGH
 
   // Check for known SPI errors in response
   if (response & (1 << 15)) {
