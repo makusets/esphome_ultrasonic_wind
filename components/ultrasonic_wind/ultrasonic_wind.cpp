@@ -141,20 +141,33 @@ uint8_t calculate_odd_parity(uint16_t word) {
 
 // write register to TUSS4470 using SPI
 void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
-  uint8_t cmd = ((reg & 0x3F) << 2);  // addr in bits 7:2, R/W = 0
+  // Build command: address in bits [7:2], R/W = 0, parity placeholder
+  uint8_t cmd = ((reg & 0x3F) << 2);  // bit 0 = 0 (write), bit 1 = parity
   uint16_t frame = (cmd << 8) | value;
 
+  // Insert parity bit (bit 9)
   if (calculate_odd_parity(frame)) {
-    frame |= (1 << 9);  // parity bit is bit 9 (bit 1 of cmd)
+    frame |= (1 << 9);
   }
 
   uint8_t high = frame >> 8;
   uint8_t low  = frame & 0xFF;
 
-  this->spi_dev_->enable();
-  this->spi_dev_->transfer_byte(high);
-  this->spi_dev_->transfer_byte(low);
-  this->spi_dev_->disable();
+  // Send command + value and receive 16-bit response
+  uint8_t status_hi = this->transfer_byte(high);
+  uint8_t status_lo = this->transfer_byte(low);
+  uint16_t response = (status_hi << 8) | status_lo;
+
+  // Check for known SPI errors in response
+  if (response & (1 << 15)) {
+    ESP_LOGW(TAG, "SPI parity or framing error during write to reg 0x%02X", reg);
+  }
+  if (response & (1 << 14)) {
+    ESP_LOGW(TAG, "Invalid register address 0x%02X (bit 14 set in response)", reg);
+  }
+
+  // Optional: log full frame
+  //ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (SPI resp = 0x%04X)", value, reg, response);
 }
 
 // read register from TUSS4470 using SPI
@@ -169,10 +182,10 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
   uint8_t high = frame >> 8;
   uint8_t low  = frame & 0xFF;
 
-  this->spi_dev_->enable();
-  this->spi_dev_->transfer_byte(high);  // Send command
-  uint8_t result = this->spi_dev_->transfer_byte(low);   // Send dummy, receive data
-  this->spi_dev_->disable();
+  this->enable();
+  this->transfer_byte(high);  // Send command
+  uint8_t result = this->transfer_byte(low);   // Send dummy, receive data
+  this->disable();
 
   return result;
 }
