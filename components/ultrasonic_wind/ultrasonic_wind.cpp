@@ -43,6 +43,7 @@ void UltrasonicWindSensor::update() {
   log_register(0x14);
   log_register(0x17);
   log_register(0x16);
+  log_register(0x18);
   // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
   write_register(0x1B, 0x02);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
   delay(1);  // Small delay to allow VDRV regulator to begin charging
@@ -140,44 +141,40 @@ uint8_t calculate_odd_parity(uint16_t word) {
 
 // write register to TUSS4470 using SPI
 void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
-  // Build command: [RW=0][6-bit addr][parity bit]
-  uint8_t command = ((reg & 0x3F) << 1);  // RW = 0 (write)
-  uint16_t frame = (command << 8) | value;
+  uint8_t cmd = ((reg & 0x3F) << 2);  // addr in bits 7:2, R/W = 0
+  uint16_t frame = (cmd << 8) | value;
 
-  // Set parity bit (bit 8)
   if (calculate_odd_parity(frame)) {
-    frame |= (1 << 8);
+    frame |= (1 << 9);  // parity bit is bit 9 (bit 1 of cmd)
   }
 
-  // Send 16 bits manually via two 8-bit SPI transfers
-  uint8_t msb = (frame >> 8) & 0xFF;
-  uint8_t lsb = frame & 0xFF;
+  uint8_t high = frame >> 8;
+  uint8_t low  = frame & 0xFF;
 
-  this->enable();
-  this->transfer_byte(msb);
-  this->transfer_byte(lsb);
-  this->disable();
+  this->spi_dev_->enable();
+  this->spi_dev_->transfer_byte(high);
+  this->spi_dev_->transfer_byte(low);
+  this->spi_dev_->disable();
 }
 
 // read register from TUSS4470 using SPI
 uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
-  // Build command: [RW=1][6-bit addr][parity bit]
-  uint8_t command = (1 << 7) | ((reg & 0x3F) << 1);  // RW = 1 (read)
-  uint16_t frame = (command << 8);
+  uint8_t cmd = ((reg & 0x3F) << 2) | 0x01;  // R/W = 1
+  uint16_t frame = (cmd << 8);
 
   if (calculate_odd_parity(frame)) {
-    frame |= (1 << 8);
+    frame |= (1 << 9);
   }
 
-  uint8_t msb = (frame >> 8) & 0xFF;
-  uint8_t lsb = frame & 0xFF;
+  uint8_t high = frame >> 8;
+  uint8_t low  = frame & 0xFF;
 
-  this->enable();
-  this->transfer_byte(msb);
-  uint8_t response = this->transfer_byte(lsb);  // LSB phase returns data
-  this->disable();
+  this->spi_dev_->enable();
+  this->spi_dev_->transfer_byte(high);  // Send command
+  uint8_t result = this->spi_dev_->transfer_byte(low);   // Send dummy, receive data
+  this->spi_dev_->disable();
 
-  return response;
+  return result;
 }
 // log the registers of the TUSS4470 for debugging purposes
 void UltrasonicWindSensor::log_register(uint8_t addr) {
