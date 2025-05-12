@@ -165,6 +165,9 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
   if (response & (1 << 14)) {
     ESP_LOGW(TAG, "Invalid register address 0x%02X (bit 14 set in response)", reg);
   }
+    if (response != 0x0000) {
+    ESP_LOGW(TAG, "Unexpected response 0x%04X during write to reg 0x%02X", response, reg);
+  }
 
   // Optional: log full frame
   //ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (SPI resp = 0x%04X)", value, reg, response);
