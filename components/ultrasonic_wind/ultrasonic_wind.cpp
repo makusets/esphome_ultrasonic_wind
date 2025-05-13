@@ -72,7 +72,7 @@ void UltrasonicWindSensor::update() {
   // Get TUSS4470 ready for the ultrasonic burst by writing to the TOF_CONFIG register, uses SPI comms
   write_register(0x1B, 0x01);  // REG_TOF_CONFIG, CMD_TRIGGER_ON
   delayMicroseconds(10);  // allow start
-  log_register(0x1B);
+  read_register(0x1B);
   //
   //Start the timer
   this->burst_start_time_us_ = micros();
