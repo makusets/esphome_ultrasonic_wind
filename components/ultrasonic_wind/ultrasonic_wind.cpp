@@ -54,8 +54,8 @@ void UltrasonicWindSensor::update() {
 
   // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
   write_register(0x1B, 0x02, 0, 0);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
-  delay(10);
-  read_register(0x1B, 1, 1)  // Small delay to allow VDRV regulator to begin charging
+  delay(10);   // Small delay to allow VDRV regulator to begin charging
+  read_register(0x1B, 1, 1);
   // Check if VDRV is ready
   if (!this->vdrv_ready_) {
     ESP_LOGW(TAG, "VDRV not ready");
