@@ -53,6 +53,7 @@ class UltrasonicWindSensor : public PollingComponent,
   float calculate_speed_of_sound();
   void write_register(uint8_t reg, uint8_t value);
   uint8_t read_register(uint8_t reg);
+  void update_status_from_response(uint16_t response);
   void log_register(uint8_t addr);
 };
 

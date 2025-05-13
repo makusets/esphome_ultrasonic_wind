@@ -152,15 +152,15 @@ static uint8_t calculate_odd_parity(uint16_t frame_without_parity) {
 
 // write register to TUSS4470 using SPI
 void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
-  // Bit 15: R/W = 0 (write), Bits 14–9: address, Bit 8: parity, Bits 7–0: data
-  uint16_t frame = ((uint16_t)(reg & 0x3F) << 9) | value;
+  // Construct 16-bit frame: [15:R/W=0][14–9:addr][8:parity][7–0:data]
+  uint16_t frame = ((reg & 0x3F) << 9) | value;
 
   if (calculate_odd_parity(frame)) {
-    frame |= (1 << 8);  // Set parity bit
+    frame |= (1 << 8);  // Set parity bit to ensure total odd parity
   }
 
   uint8_t high = frame >> 8;
-  uint8_t low = frame & 0xFF;
+  uint8_t low  = frame & 0xFF;
 
   this->enable();
   uint8_t resp_hi = this->transfer_byte(high);
@@ -169,25 +169,19 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
 
   uint16_t response = (resp_hi << 8) | resp_lo;
 
-  if (response != 0x0000) {
-    ESP_LOGW(TAG, "Unexpected response 0x%04X during write to reg 0x%02X", response, reg);
-  }
-  if (response & (1 << 15)) {
-    ESP_LOGW(TAG, "SPI error during write (bit 15 set)");
-  }
-  if (response & (1 << 14)) {
-    ESP_LOGW(TAG, "Invalid register address (bit 14 set)");
-  }
+  update_status_from_response(response); 
 
-  // ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (response = 0x%04X)", value, reg, response);
+  ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (response = 0x%04X)", value, reg, response);
 }
+
+//Read register through SPI
 uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
   uint8_t cmd[2];
   cmd[0] = ((reg & 0x3F) << 2) | 0x01;  // R/W = 1
   cmd[1] = 0x00;
 
-uint16_t parity_frame = ((uint16_t)cmd[0] << 8) | cmd[1];
-if (calculate_odd_parity(parity_frame)) {
+  uint16_t parity_frame = ((uint16_t)cmd[0] << 8) | cmd[1];
+  if (calculate_odd_parity(parity_frame)) {
   cmd[0] |= (1 << 1);  // set parity bit
   }
 
@@ -199,36 +193,35 @@ if (calculate_odd_parity(parity_frame)) {
   uint16_t response = (resp_hi << 8) | resp_lo;
   uint8_t value = response & 0xFF;
 
-  // Decode individual status flags
-  this->tuss4470_spi_error_ = (response >> 15) & 0x01;
-  this->vdrv_ready_ =        (response >> 14) & 0x01;
-  this->pulse_num_fault_ =   (response >> 13) & 0x01;
-  this->driver_fault_ =      (response >> 12) & 0x01;
-  this->eeprom_crc_fault_ =  (response >> 11) & 0x01;
-  this->dev_state_ =         (response >> 9)  & 0x03;  // bits 10–9
-
-  // Optional logging
-  if (this->tuss4470_spi_error_)      ESP_LOGW(TAG, "Previous SPI parity error detected");
-  if (this->pulse_num_fault_)         ESP_LOGW(TAG, "Pulse number fault (burst ended early)");
-  if (this->driver_fault_)            ESP_LOGW(TAG, "Driver fault detected");
-  if (this->eeprom_crc_fault_)        ESP_LOGW(TAG, "EEPROM CRC fault");
-  if (this->vdrv_ready_)              ESP_LOGD(TAG, "VDRV regulator is ready");
-
-  switch (this->dev_state_) {
-    case 0x00: ESP_LOGD(TAG, "DEV_STATE: LISTEN"); break;
-    case 0x01: ESP_LOGD(TAG, "DEV_STATE: BURST"); break;
-    case 0x02: ESP_LOGD(TAG, "DEV_STATE: STANDBY"); break;
-    case 0x03: ESP_LOGD(TAG, "DEV_STATE: SLEEP"); break;
-  }
+  // Update status 
+  update_status_from_response(response); 
 
   ESP_LOGD(TAG, "Read reg 0x%02X = 0x%02X (raw response = 0x%04X)", reg, value, response);
   return value;
 }
-//log register read
-void UltrasonicWindSensor::log_register(uint8_t reg) {
-  uint8_t val = this->read_register(reg);
-  ESP_LOGD(TAG, "TUSS4470 Reg[0x%02X] = 0x%02X (0b%s)",
-           reg, val, std::bitset<8>(val).to_string().c_str());
+//update status from the first 7 bits of any response, either in read or write
+void UltrasonicWindSensor::update_status_from_response(uint16_t response) {
+  this->tuss4470_spi_error_     = (response >> 15) & 0x01;
+  this->vdrv_ready_             = (response >> 14) & 0x01;
+  this->pulse_num_fault_        = (response >> 13) & 0x01;
+  this->driver_fault_           = (response >> 12) & 0x01;
+  this->eeprom_crc_fault_       = (response >> 11) & 0x01;
+  this->dev_state_              = (response >> 9)  & 0x03;
+
+  // Optional logging
+  if (this->tuss4470_spi_error_)      ESP_LOGW(TAG, "TUSS4470: Previous SPI parity error detected");
+  if (this->pulse_num_fault_)         ESP_LOGW(TAG, "TUSS4470: Pulse number fault (burst ended early)");
+  if (this->driver_fault_)            ESP_LOGW(TAG, "TUSS4470: Driver fault detected");
+  if (this->eeprom_crc_fault_)        ESP_LOGW(TAG, "TUSS4470: EEPROM CRC fault");
+  if (this->vdrv_ready_)              ESP_LOGD(TAG, "TUSS4470: VDRV regulator is ready");
+
+  switch (this->dev_state_) {
+    case 0x00: ESP_LOGD(TAG, "TUSS4470: DEV_STATE = LISTEN"); break;
+    case 0x01: ESP_LOGD(TAG, "TUSS4470: DEV_STATE = BURST"); break;
+    case 0x02: ESP_LOGD(TAG, "TUSS4470: DEV_STATE = STANDBY"); break;
+    case 0x03: ESP_LOGD(TAG, "TUSS4470: DEV_STATE = SLEEP"); break;
+  }
+}
 }
 
 
