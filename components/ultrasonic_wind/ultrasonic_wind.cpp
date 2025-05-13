@@ -45,6 +45,16 @@ void UltrasonicWindSensor::update() {
   log_register(0x17);
   log_register(0x16);
   log_register(0x18);
+  
+    // Set IO_MODE = 0 on TUSS4470: external burst control via clock on IO2 (burst_pin), done using SPI comms
+  write_register(0x14, 0x00);  // REG_DEV_CTRL_3
+
+  // Enable echo interrupt (OUT4) output on TUSS4470 and set threshold level, done using SPI comms
+  write_register(0x17, 0x11);  // 
+
+  // Enable regulator
+  write_register(0x16, 0x00);  // VDRV_HI_Z = 0, level = 0x00 → 5V
+
   // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
   write_register(0x1B, 0x02);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
   delay(1);  // Small delay to allow VDRV regulator to begin charging

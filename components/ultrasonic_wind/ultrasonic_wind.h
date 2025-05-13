@@ -12,7 +12,7 @@ class UltrasonicWindSensor : public PollingComponent,
                               public spi::SPIDevice<spi::BIT_ORDER_MSB_FIRST,
                                                     spi::CLOCK_POLARITY_LOW,
                                                     spi::CLOCK_PHASE_LEADING,
-                                                    spi::DATA_RATE_75KHZ> {
+                                                    spi::DATA_RATE_200KHZ> {
  public:
   void setup() override;
   void update() override;
