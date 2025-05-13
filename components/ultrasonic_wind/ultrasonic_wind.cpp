@@ -186,8 +186,9 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
   cmd[0] = ((reg & 0x3F) << 2) | 0x01;  // R/W = 1
   cmd[1] = 0x00;
 
-  if (calculate_odd_parity(cmd[0], cmd[1])) {
-    cmd[0] |= (1 << 1);  // set parity bit
+uint16_t parity_frame = ((uint16_t)cmd[0] << 8) | cmd[1];
+if (calculate_odd_parity(parity_frame)) {
+  cmd[0] |= (1 << 1);  // set parity bit
   }
 
   this->enable();
