@@ -33,6 +33,14 @@ class UltrasonicWindSensor : public PollingComponent,
   sensor::Sensor *temp_sensor_{nullptr};
   sensor::Sensor *hum_sensor_{nullptr};
 
+  //TUSS4470 variables
+  bool tuss4470_spi_error_ = false;          // Bit 15: parity error on previous frame
+  bool vdrv_ready_ = false;                  // Bit 14
+  bool pulse_num_fault_ = false;             // Bit 13
+  bool driver_fault_ = false;                // Bit 12
+  bool eeprom_crc_fault_ = false;            // Bit 11
+  uint8_t dev_state_ = 0;                    // Bits 10–9: 00 = LISTEN, 01 = BURST, 10 = STANDBY, 11 = SLEEP
+
   float sensor_distance_mm_{200.0f};
 
   uint32_t burst_start_time_us_{0};

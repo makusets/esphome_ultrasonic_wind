@@ -41,11 +41,12 @@ void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor
  The component is a sensor, so it gets called depending on update_interval set in the YAML config
 ****************************************************************/
 void UltrasonicWindSensor::update() {
-  log_register(0x14);
-  log_register(0x17);
-  log_register(0x16);
-  log_register(0x18);
-  
+
+  read_register(0x14);
+  read_register(0x17);
+  read_register(0x16);
+  read_register(0x18);
+
     // Set IO_MODE = 0 on TUSS4470: external burst control via clock on IO2 (burst_pin), done using SPI comms
   write_register(0x14, 0x00);  // REG_DEV_CTRL_3
 
@@ -182,25 +183,47 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
 
   // ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (response = 0x%04X)", value, reg, response);
 }
-// read register from TUSS4470 using SPI
 uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
-  // Bit 15: R/W = 1 (read), Bits 14–9: address, Bit 8: parity, Bits 7–0: dummy
-  uint16_t frame = ((uint16_t)(1 << 15)) | ((reg & 0x3F) << 9);  // Read + address
+  uint8_t cmd[2];
+  cmd[0] = ((reg & 0x3F) << 2) | 0x01;  // R/W = 1
+  cmd[1] = 0x00;
 
-  if (calculate_odd_parity(frame)) {
-    frame |= (1 << 8);  // Set parity bit
+  if (calculate_odd_parity(cmd[0], cmd[1])) {
+    cmd[0] |= (1 << 1);  // set parity bit
   }
 
-  uint8_t high = frame >> 8;
-  uint8_t low = frame & 0xFF;
-
   this->enable();
-  this->transfer_byte(high);            // Send command
-  uint8_t result = this->transfer_byte(low);  // Get data
+  uint8_t resp_hi = this->transfer_byte(cmd[0]);
+  uint8_t resp_lo = this->transfer_byte(cmd[1]);
   this->disable();
 
-  ESP_LOGD(TAG, "Read reg 0x%02X = 0x%02X", reg, result);
-  return result;
+  uint16_t response = (resp_hi << 8) | resp_lo;
+  uint8_t value = response & 0xFF;
+
+  // Decode individual status flags
+  this->tuss4470_spi_error_ = (response >> 15) & 0x01;
+  this->vdrv_ready_ =        (response >> 14) & 0x01;
+  this->pulse_num_fault_ =   (response >> 13) & 0x01;
+  this->driver_fault_ =      (response >> 12) & 0x01;
+  this->eeprom_crc_fault_ =  (response >> 11) & 0x01;
+  this->dev_state_ =         (response >> 9)  & 0x03;  // bits 10–9
+
+  // Optional logging
+  if (this->tuss4470_spi_error_)      ESP_LOGW(TAG, "Previous SPI parity error detected");
+  if (this->pulse_num_fault_)         ESP_LOGW(TAG, "Pulse number fault (burst ended early)");
+  if (this->driver_fault_)            ESP_LOGW(TAG, "Driver fault detected");
+  if (this->eeprom_crc_fault_)        ESP_LOGW(TAG, "EEPROM CRC fault");
+  if (this->vdrv_ready_)              ESP_LOGD(TAG, "VDRV regulator is ready");
+
+  switch (this->dev_state_) {
+    case 0x00: ESP_LOGD(TAG, "DEV_STATE: LISTEN"); break;
+    case 0x01: ESP_LOGD(TAG, "DEV_STATE: BURST"); break;
+    case 0x02: ESP_LOGD(TAG, "DEV_STATE: STANDBY"); break;
+    case 0x03: ESP_LOGD(TAG, "DEV_STATE: SLEEP"); break;
+  }
+
+  ESP_LOGD(TAG, "Read reg 0x%02X = 0x%02X (raw response = 0x%04X)", reg, value, response);
+  return value;
 }
 //log register read
 void UltrasonicWindSensor::log_register(uint8_t reg) {
