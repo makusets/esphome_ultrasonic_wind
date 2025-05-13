@@ -49,28 +49,21 @@ void UltrasonicWindSensor::update() {
   // Enable echo interrupt (OUT4) output on TUSS4470 and set threshold level, done using SPI comms
   write_register(0x17, 0x11, 0, 0);  // 
 
-  // Enable regulator
+  // Enable charging regulator to drive transducer
   write_register(0x16, 0x00, 0, 0);  // VDRV_HI_Z = 0, level = 0x00 → 5V
-
-  // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
-  write_register(0x1B, 0x02, 0, 0);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
-  delay(10);   // Small delay to allow VDRV regulator to begin charging
+  delay(1);   // Small delay to allow VDRV regulator to begin charging
   read_register(0x1B, 1, 1);
   // Check if VDRV is ready
   if (!this->vdrv_ready_) {
     ESP_LOGW(TAG, "VDRV not ready");
     //return;  // Skip triggering if not ready
   }
-    
+  
+  // Put the TUSS4470 ready for burst, it will trigger when clock is received in IO2
+  write_register(0x1B, 0x01, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER = 1
   
   this->tof_available_ = false;
 
-
-  // Get TUSS4470 ready for the ultrasonic burst by writing to the TOF_CONFIG register, uses SPI comms
-  write_register(0x1B, 0x01, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER_ON
-  delayMicroseconds(10);  // allow start
-
-  //
   //Start the timer
   ESP_LOGI(TAG, "Starting clock");
   this->burst_start_time_us_ = micros();
@@ -82,9 +75,6 @@ void UltrasonicWindSensor::update() {
     this->burst_pin_->digital_write(true);
     delayMicroseconds(12);
   }
-  //Reset the TUSS4470 as per datasheet
-  write_register(0x1B, 0x00, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER_OFF
-
   // Wait for the echo to be captured
   // The interrupt handler will set tof_available_ to true when the echo is received
   for (int i = 0; i < 50; i++) {
@@ -95,6 +85,8 @@ void UltrasonicWindSensor::update() {
   if (!this->tof_available_) {
     ESP_LOGW(TAG, "No echo received");
     read_register(0x1B, 1, 1);
+      //Reset the TUSS4470 as per datasheet
+    write_register(0x1B, 0x00, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER_OFF
     return;
   }
   // If the echo is received, start the calculations
@@ -118,6 +110,8 @@ void UltrasonicWindSensor::update() {
   if (this->wind_direction_sensor_ != nullptr)
     this->wind_direction_sensor_->publish_state(wind_direction);
 
+  //Reset the TUSS4470 as per datasheet
+  write_register(0x1B, 0x00, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER_OFF
 
 }
 
