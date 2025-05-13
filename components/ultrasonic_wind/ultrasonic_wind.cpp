@@ -21,13 +21,13 @@ void UltrasonicWindSensor::setup() {
   this->interrupt_pin_->attach_interrupt(UltrasonicWindSensor::gpio_interrupt_handler, this, gpio::INTERRUPT_RISING_EDGE);
 
   // Set IO_MODE = 0 on TUSS4470: external burst control via clock on IO2 (burst_pin), done using SPI comms
-  write_register(0x14, 0x00);  // REG_DEV_CTRL_3
+  write_register(0x14, 0x00, 0, 0);  // REG_DEV_CTRL_3
 
   // Enable echo interrupt (OUT4) output on TUSS4470 and set threshold level, done using SPI comms
-  write_register(0x17, 0x11);  // 
+  write_register(0x17, 0x11, 0, 0);  // 
 
   // Enable regulator
-  write_register(0x16, 0x00);  // VDRV_HI_Z = 0, level = 0x00 → 5V
+  write_register(0x16, 0x00, 0, 0);  // VDRV_HI_Z = 0, level = 0x00 → 5V
 }
 
 void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor *arg) {
@@ -42,24 +42,21 @@ void IRAM_ATTR UltrasonicWindSensor::gpio_interrupt_handler(UltrasonicWindSensor
 ****************************************************************/
 void UltrasonicWindSensor::update() {
 
-  read_register(0x14);
-  read_register(0x17);
-  read_register(0x16);
-  read_register(0x18);
 
     // Set IO_MODE = 0 on TUSS4470: external burst control via clock on IO2 (burst_pin), done using SPI comms
-  write_register(0x14, 0x00);  // REG_DEV_CTRL_3
+  write_register(0x14, 0x00, 0, 0);  // REG_DEV_CTRL_3
 
   // Enable echo interrupt (OUT4) output on TUSS4470 and set threshold level, done using SPI comms
-  write_register(0x17, 0x11);  // 
+  write_register(0x17, 0x11, 0, 0);  // 
 
   // Enable regulator
-  write_register(0x16, 0x00);  // VDRV_HI_Z = 0, level = 0x00 → 5V
+  write_register(0x16, 0x00, 0, 0);  // VDRV_HI_Z = 0, level = 0x00 → 5V
 
   // Ensure the TUSS4470 driver voltage (VDRV) is charged and ready
-  write_register(0x1B, 0x02);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
-  delay(1);  // Small delay to allow VDRV regulator to begin charging
-  // Check if VDRV is ready by reading DEV_STAT (0x1C), bit 3 = VDRV_READY
+  write_register(0x1B, 0x02, 0, 0);  // REG_TOF_CONFIG, VDRV_TRIGGER = 1
+  delay(10);
+  read_register(0x1B, 1, 1)  // Small delay to allow VDRV regulator to begin charging
+  // Check if VDRV is ready
   if (!this->vdrv_ready_) {
     ESP_LOGW(TAG, "VDRV not ready");
     //return;  // Skip triggering if not ready
@@ -70,16 +67,15 @@ void UltrasonicWindSensor::update() {
 
 
   // Get TUSS4470 ready for the ultrasonic burst by writing to the TOF_CONFIG register, uses SPI comms
-  write_register(0x1B, 0x01);  // REG_TOF_CONFIG, CMD_TRIGGER_ON
+  write_register(0x1B, 0x01, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER_ON
   delayMicroseconds(10);  // allow start
-  read_register(0x1B);
+
   //
   //Start the timer
+  ESP_LOGI(TAG, "Starting clock");
   this->burst_start_time_us_ = micros();
   // Trigger the burst by toggling the burst pin (IO2) 8 times, each time with a 13us low and 12us high pulse
   // This generates a 40kHz signal on the burst pin (IO2) for the TUSS4470 and will start the ultrasonic burst in OUTA and OUTB
-
-  ESP_LOGI(TAG, "Starting clock");
   for (int i = 0; i < 8; i++) {
     this->burst_pin_->digital_write(false);
     delayMicroseconds(13);
@@ -87,7 +83,7 @@ void UltrasonicWindSensor::update() {
     delayMicroseconds(12);
   }
   //Reset the TUSS4470 as per datasheet
-  write_register(0x1B, 0x00);  // REG_TOF_CONFIG, CMD_TRIGGER_OFF
+  write_register(0x1B, 0x00, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER_OFF
 
   // Wait for the echo to be captured
   // The interrupt handler will set tof_available_ to true when the echo is received
@@ -121,7 +117,7 @@ void UltrasonicWindSensor::update() {
   if (this->wind_direction_sensor_ != nullptr)
     this->wind_direction_sensor_->publish_state(wind_direction);
 
-  
+  read_register(0x1B, 1, 1);
 }
 
 
@@ -151,7 +147,7 @@ static uint8_t calculate_odd_parity(uint16_t frame_without_parity) {
 }
 
 // write register to TUSS4470 using SPI
-void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
+void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value, bool update_status, bool log_output) {
   // Construct 16-bit frame: [15:R/W=0][14–9:addr][8:parity][7–0:data]
   uint16_t frame = ((reg & 0x3F) << 9) | value;
 
@@ -169,13 +165,16 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
 
   uint16_t response = (resp_hi << 8) | resp_lo;
 
-  update_status_from_response(response); 
+  // Optional update status and logs
+  if (update_status) {
+  this->update_status_from_response(response, log_output);
+  }
 
-  ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (response = 0x%04X)", value, reg, response);
+
 }
 
 //Read register through SPI
-uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
+uint8_t UltrasonicWindSensor::read_register(uint8_t reg, bool update_status, bool log_output) {
   uint8_t cmd[2];
   cmd[0] = ((reg & 0x3F) << 2) | 0x01;  // R/W = 1
   cmd[1] = 0x00;
@@ -193,14 +192,14 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
   uint16_t response = (resp_hi << 8) | resp_lo;
   uint8_t value = response & 0xFF;
 
-  // Update status 
-  update_status_from_response(response); 
+  // Optional update status and logs
+  if (update_status) {
+  this->update_status_from_response(response, log_output);
+  }
 
-  ESP_LOGD(TAG, "Read reg 0x%02X = 0x%02X (raw response = 0x%04X)", reg, value, response);
-  return value;
 }
 //update status from the first 7 bits of any response, either in read or write
-void UltrasonicWindSensor::update_status_from_response(uint16_t response) {
+void update_status_from_response(uint16_t response, bool log_output = true); {
   this->tuss4470_spi_error_     = (response >> 15) & 0x01;
   this->vdrv_ready_             = (response >> 14) & 0x01;
   this->pulse_num_fault_        = (response >> 13) & 0x01;
@@ -208,7 +207,10 @@ void UltrasonicWindSensor::update_status_from_response(uint16_t response) {
   this->eeprom_crc_fault_       = (response >> 11) & 0x01;
   this->dev_state_              = (response >> 9)  & 0x03;
 
+  if (!log_output) return;
+
   // Optional logging
+
   if (this->tuss4470_spi_error_)      ESP_LOGW(TAG, "TUSS4470: Previous SPI parity error detected");
   if (this->pulse_num_fault_)         ESP_LOGW(TAG, "TUSS4470: Pulse number fault (burst ended early)");
   if (this->driver_fault_)            ESP_LOGW(TAG, "TUSS4470: Driver fault detected");
