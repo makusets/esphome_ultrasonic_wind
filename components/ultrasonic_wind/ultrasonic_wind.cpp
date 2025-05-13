@@ -1,5 +1,6 @@
 #include "ultrasonic_wind.h"
 #include "esphome/core/log.h"
+#include <bitset>
 
 namespace esphome {
 namespace ultrasonic_wind {
@@ -190,6 +191,14 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
 
   ESP_LOGD(TAG, "Read reg 0x%02X = 0x%02X", reg, result);
   return result;
+
+//log register read
+void UltrasonicWindSensor::log_register(uint8_t reg) {
+  uint8_t val = this->read_register(reg);
+  ESP_LOGD(TAG, "TUSS4470 Reg[0x%02X] = 0x%02X (0b%s)",
+           reg, val, std::bitset<8>(val).to_string().c_str());
+}
+
 }
 
 
