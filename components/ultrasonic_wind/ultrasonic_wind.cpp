@@ -222,7 +222,7 @@ void UltrasonicWindSensor::update_status_from_response(uint16_t response) {
     case 0x03: ESP_LOGD(TAG, "TUSS4470: DEV_STATE = SLEEP"); break;
   }
 }
-}
+
 
 
 
