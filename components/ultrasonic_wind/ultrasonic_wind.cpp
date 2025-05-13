@@ -131,12 +131,13 @@ float UltrasonicWindSensor::calculate_wind_speed_from_tof() {
 
 //calculate the odd parity bit for a 16-bit word before sending it to the TUSS4470 through SPI
 // The odd parity bit is set to 1 if the number of 1 bits in the word is even, and 0 if it is odd
-static uint8_t calculate_odd_parity(uint16_t word) {
+static uint8_t calculate_odd_parity(uint16_t frame_without_parity) {
+  uint16_t masked = frame_without_parity & ~(1 << 8);  // Mask out bit 8
   uint8_t count = 0;
   for (uint8_t i = 0; i < 16; i++) {
-    count += (word >> i) & 0x1;
+    count += (masked >> i) & 0x1;
   }
-  return (count % 2 == 0) ? 1 : 0;  // Return 1 if even → to make total odd
+  return (count % 2 == 0) ? 1 : 0;  // Set parity to 1 if even (to force odd)
 }
 
 // write register to TUSS4470 using SPI
