@@ -191,7 +191,7 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
 
   ESP_LOGD(TAG, "Read reg 0x%02X = 0x%02X", reg, result);
   return result;
-
+}
 //log register read
 void UltrasonicWindSensor::log_register(uint8_t reg) {
   uint8_t val = this->read_register(reg);
@@ -199,7 +199,7 @@ void UltrasonicWindSensor::log_register(uint8_t reg) {
            reg, val, std::bitset<8>(val).to_string().c_str());
 }
 
-}
+
 
 
 }  // namespace ultrasonic_wind
