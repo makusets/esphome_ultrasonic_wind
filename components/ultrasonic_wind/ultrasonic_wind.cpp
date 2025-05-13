@@ -59,13 +59,14 @@ void UltrasonicWindSensor::update() {
     //return;  // Skip triggering if not ready
   }
   
+  ESP_LOGI(TAG, "Starting clock");
+  this->tof_available_ = false;
   // Put the TUSS4470 ready for burst, it will trigger when clock is received in IO2
   write_register(0x1B, 0x01, 0, 0);  // REG_TOF_CONFIG, CMD_TRIGGER = 1
-  
-  this->tof_available_ = false;
+ 
+
 
   //Start the timer
-  ESP_LOGI(TAG, "Starting clock");
   this->burst_start_time_us_ = micros();
   // Trigger the burst by toggling the burst pin (IO2) 8 times, each time with a 13us low and 12us high pulse
   // This generates a 40kHz signal on the burst pin (IO2) for the TUSS4470 and will start the ultrasonic burst in OUTA and OUTB
