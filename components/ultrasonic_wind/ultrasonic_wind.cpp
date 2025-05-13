@@ -199,7 +199,7 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg, bool update_status, boo
   return value;
 }
 //update status from the first 7 bits of any response, either in read or write
-void update_status_from_response(uint16_t response, bool log_output = true) {
+void UltrasonicWindSensor::update_status_from_response(uint16_t response, bool log_output = true) {
   this->tuss4470_spi_error_     = (response >> 15) & 0x01;
   this->vdrv_ready_             = (response >> 14) & 0x01;
   this->pulse_num_fault_        = (response >> 13) & 0x01;
