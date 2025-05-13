@@ -94,6 +94,7 @@ void UltrasonicWindSensor::update() {
   // If the echo is not received within 5ms, assume no echo was received and quit the update function
   if (!this->tof_available_) {
     ESP_LOGW(TAG, "No echo received");
+    read_register(0x1B, 1, 1);
     return;
   }
   // If the echo is received, start the calculations
@@ -117,7 +118,7 @@ void UltrasonicWindSensor::update() {
   if (this->wind_direction_sensor_ != nullptr)
     this->wind_direction_sensor_->publish_state(wind_direction);
 
-  read_register(0x1B, 1, 1);
+
 }
 
 
