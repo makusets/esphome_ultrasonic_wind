@@ -143,7 +143,7 @@ static uint8_t calculate_odd_parity(uint16_t frame_without_parity) {
 // write register to TUSS4470 using SPI
 void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
   // Bit 15: R/W = 0 (write), Bits 14–9: address, Bit 8: parity, Bits 7–0: data
-  uint16_t frame = ((reg & 0x3F) << 9) | value;
+  uint16_t frame = ((uint16_t)(reg & 0x3F) << 9) | value;
 
   if (calculate_odd_parity(frame)) {
     frame |= (1 << 8);  // Set parity bit
@@ -174,7 +174,7 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
 // read register from TUSS4470 using SPI
 uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
   // Bit 15: R/W = 1 (read), Bits 14–9: address, Bit 8: parity, Bits 7–0: dummy
-  uint16_t frame = (1 << 15) | ((reg & 0x3F) << 9);  // Read + address
+  uint16_t frame = ((uint16_t)(1 << 15)) | ((reg & 0x3F) << 9);  // Read + address
 
   if (calculate_odd_parity(frame)) {
     frame |= (1 << 8);  // Set parity bit
