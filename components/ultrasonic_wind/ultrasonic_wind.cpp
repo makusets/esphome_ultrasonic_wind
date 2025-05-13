@@ -142,20 +142,20 @@ static uint8_t calculate_odd_parity(uint16_t frame_without_parity) {
 
 // write register to TUSS4470 using SPI
 void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
-  // Construct SPI frame: [R/W=0][ADDR][PARITY][DATA]
-  uint16_t frame = ((uint16_t)(reg & 0x3F) << 9) | value;
+  // Bit 15: R/W = 0 (write), Bits 14–9: address, Bit 8: parity, Bits 7–0: data
+  uint16_t frame = ((reg & 0x3F) << 9) | value;
 
   if (calculate_odd_parity(frame)) {
-    frame |= (1 << 8);
+    frame |= (1 << 8);  // Set parity bit
   }
 
   uint8_t high = frame >> 8;
-  uint8_t low  = frame & 0xFF;
+  uint8_t low = frame & 0xFF;
 
-  this->enable();  // CS LOW
+  this->enable();
   uint8_t resp_hi = this->transfer_byte(high);
   uint8_t resp_lo = this->transfer_byte(low);
-  this->disable(); // CS HIGH
+  this->disable();
 
   uint16_t response = (resp_hi << 8) | resp_lo;
 
@@ -169,32 +169,27 @@ void UltrasonicWindSensor::write_register(uint8_t reg, uint8_t value) {
     ESP_LOGW(TAG, "Invalid register address (bit 14 set)");
   }
 
-//  ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (response = 0x%04X)", value, reg, response);
+  // ESP_LOGD(TAG, "Wrote 0x%02X to reg 0x%02X (response = 0x%04X)", value, reg, response);
 }
 // read register from TUSS4470 using SPI
 uint8_t UltrasonicWindSensor::read_register(uint8_t reg) {
-  // Construct SPI frame: [R/W=1][ADDR][PARITY][DUMMY]
-  uint16_t frame = ((uint16_t)(1 << 15)) | ((reg & 0x3F) << 9);
+  // Bit 15: R/W = 1 (read), Bits 14–9: address, Bit 8: parity, Bits 7–0: dummy
+  uint16_t frame = (1 << 15) | ((reg & 0x3F) << 9);  // Read + address
 
   if (calculate_odd_parity(frame)) {
-    frame |= (1 << 8);
+    frame |= (1 << 8);  // Set parity bit
   }
 
   uint8_t high = frame >> 8;
   uint8_t low = frame & 0xFF;
 
-  this->enable();  // CS LOW
-  this->transfer_byte(high);         // Send command
-  uint8_t result = this->transfer_byte(low);  // Get register data
-  this->disable(); // CS HIGH
+  this->enable();
+  this->transfer_byte(high);            // Send command
+  uint8_t result = this->transfer_byte(low);  // Get data
+  this->disable();
 
   ESP_LOGD(TAG, "Read reg 0x%02X = 0x%02X", reg, result);
   return result;
-}
-// log the registers of the TUSS4470 for debugging purposes
-void UltrasonicWindSensor::log_register(uint8_t addr) {
-  uint8_t val = read_register(addr);
-  ESP_LOGD(TAG, "TUSS4470 Reg[0x%02X] = 0x%02X", addr, val);
 }
 
 
