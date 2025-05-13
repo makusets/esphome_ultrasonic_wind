@@ -196,7 +196,7 @@ uint8_t UltrasonicWindSensor::read_register(uint8_t reg, bool update_status, boo
   if (update_status) {
   this->update_status_from_response(response, log_output);
   }
-
+  return value;
 }
 //update status from the first 7 bits of any response, either in read or write
 void update_status_from_response(uint16_t response, bool log_output = true); {
